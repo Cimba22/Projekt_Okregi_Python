@@ -1,5 +1,6 @@
 import pygame
 import random
+import copy
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -18,6 +19,16 @@ pygame.display.set_caption("Okręgi")
 font_size = int(block_size / 1.5)
 
 font = pygame.font.SysFont('notosans', font_size)
+
+computer_available_to_fire_set = set((a, b) for a in range(1, 11) for b in range (1, 11))
+around_last_computer_hit_set = set()
+hit_blocks = set()
+dotted_set = set()
+dotted_set_for_computer_to_shoot = set()
+hit_blocks_for_computer_to_shoot = set()
+last_hits_list = []
+destroyed_ships_list = []
+
 
 class ShipsOnGrid:
     def __init__(self):
@@ -79,6 +90,8 @@ class ShipsOnGrid:
 
 computer = ShipsOnGrid()
 human = ShipsOnGrid()
+computer_ships_working = copy.deepcopy(computer.ships)
+human_ships_working = copy.deepcopy(human.ships)
 
 def draw_ships(ships_coordinates_list):
     for elem in ships_coordinates_list:
@@ -141,10 +154,103 @@ def draw_grid():
             screen.blit(letters_hor, (left_margin + i * block_size + (block_size // 2 - letters_hor_width // 2) + 15 * block_size,
                                       upper_margin + 10 * block_size))
 
+
+def sign_grids():
+    player1 = font.render("COMPUTER", True, BLACK)
+    player2 = font.render("HUMAN", True, BLACK)
+    sign1_width = player1.get_width()
+    sign2_width = player2.get_width()
+    screen.blit(player1, (left_margin + 5 * block_size - sign1_width//2, upper_margin - block_size//2 - font_size))
+    screen.blit(player2, (left_margin + 20 * block_size - sign2_width // 2, upper_margin - block_size // 2 - font_size))
+
+
+def computer_shoots(set_to_shoot_from):
+    pygame.time.delay(500)
+    computer_fired_blocked = random.choice(tuple(set_to_shoot_from))
+    computer_available_to_fire_set.discard(computer_fired_blocked)
+    return check_hit_or_miss(computer_fired_blocked, human_ships_working, True)
+
+
+def check_hit_or_miss(fired_block, opponents_ships_list, computer_turn, diagonal_only = True):
+    for elem in opponents_ships_list:
+        if fired_block in elem:
+            update_dotted_and_hit_sets(fired_block, computer_turn, diagonal_only = True)
+            ind = opponents_ships_list.index(elem)
+
+            if len(elem) == 1:
+                update_dotted_and_hit_sets(fired_block, computer_turn, diagonal_only=False)
+
+            elem.remove(fired_block)
+
+            if computer_turn:
+                last_hits_list.append(fired_block)
+                human.ships_set.discard(fired_block)
+                update_around_last_computer_hit(fired_block)
+            else:
+                computer.ships_set.discard(fired_block)
+
+            if not elem:
+                draw_destroyed_ships(ind, opponents_ships_list, computer_turn)
+                if computer_turn:
+                    last_hits_list.clear()
+                    around_last_computer_hit_set.clear()
+                else:
+                    destroyed_ships_list.append(computer.ships_set[ind])
+
+            return True
+        put_dot_on_missed_block(fired_block, computer_turn)
+        if computer_turn:
+            update_around_last_computer_hit(fired_block)
+        return False
+
+def put_dot_on_missed_block(fired_block, computer_turn = False):
+    if not computer_turn:
+        dotted_set.add(fired_block)
+    else:
+        dotted_set.add((fired_block[0] + 15, fired_block[1]))
+        dotted_set_for_computer_to_shoot.add(fired_block)
+
+def draw_destroyed_ships(ind, opponents_ships_list, computer_turn):
+    pass
+
+def update_around_last_computer_hit(fired_block, computer_hits=True):
+    global around_last_computer_hit_set, computer_available_to_fire_set
+
+
+
+
+def update_dotted_and_hit_sets(fired_block, computer_turn, diagonal_only=True):
+    global dotted_set
+    x, y = fired_block
+    a, b = 0, 11
+    if computer_turn:
+        x += 15
+        a += 15
+        b += 15
+        hit_blocks_for_computer_to_shoot.add(fired_block)
+    hit_blocks.add((x, y))
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            if diagonal_only:
+                if i != 0 and j != 0 and a < x + i < b and 0 < y < 11:
+                    dotted_set.add((x+i, y+j))
+                    if computer_turn:
+                        dotted_set_for_computer_to_shoot.add((fired_block[0] + i, y + j))
+            else:
+                if a < x < b and 0 < y < 11:
+                    dotted_set.add((x + i, y + j))
+                    if computer_turn:
+                        dotted_set_for_computer_to_shoot.add(fired_block[0] + i, y + j)
+    dotted_set -= hit_blocks
+
+
+
 def main():
     game_over = False
+    computer_turn = False
     screen.fill(WHITE)
     draw_grid()
+    sign_grids()
     draw_ships(computer.ships)
     draw_ships(human.ships)
     pygame.display.update()
@@ -153,8 +259,16 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
-
-
+            elif not computer_turn and event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos
+                if (left_margin <= x <= left_margin + 10 * block_size) and (upper_margin <= y <= upper_margin + 10 * block_size):
+                    fired_block = ((x - left_margin)  // block_size + 1, (y - upper_margin) // block_size + 1)
+                    computer_turn = not check_hit_or_miss()
+        if computer_turn:
+            if around_last_computer_hit_set:
+                computer_turn = computer_shoots(around_last_computer_hit_set)
+            else:
+                computer_turn = computer_shoots(computer_available_to_fire_set)
 
 main()
 pygame.quit()
