@@ -4,6 +4,10 @@ import copy
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+GREEN_BLUE = (0, 153, 153)
+LIGHT_GRAY = (192, 192, 192)
+RED = (255, 0, 0)
+
 
 block_size = 40
 left_margin = 50
@@ -69,6 +73,44 @@ class Grid:
         sign_width = player.get_width()
         screen.blit(player, (left_margin + 5 * block_size - sign_width//2+self.offset, upper_margin - block_size//2 - font_size))
 
+class Button:
+    def __init__(self, x_offset, button_title, message_to_show):
+        self.__title = button_title
+        self.__title_width, self.__title_height = font.size(self.__title)
+        self.__message = message_to_show
+        self.__button_width = self.__title_width + block_size
+        self.__button_height = self.__title_height + block_size
+        self.__x_start = x_offset
+        self.__y_start = upper_margin + 10 * block_size + self.__button_height
+
+        self.rect_for_draw = self.__x_start, self.__y_start, self.__button_width, self.__button_height
+        self.rect = pygame.Rect(self.rect_for_draw)
+
+        self.__rect_for_button_title = self.__x_start + self.__button_width / 2 - self.__title_width / 2, self.__y_start + self.__button_height / 2 - self.__title_height / 2
+        self.__color = BLACK
+
+    def draw_button(self, color=None):
+        if not color:
+            color = self.__color
+        pygame.draw.rect(screen, color, self.rect_for_draw)
+        text_to_blit = font.render(self.__title, True, WHITE)
+        screen.blit(text_to_blit, self.__rect_for_button_title)
+
+
+    def change_color_on_hover(self):
+        mouse = pygame.mouse.get_pos()
+        if self.rect.collidepoint(mouse):
+            self.draw_button(GREEN_BLUE)
+
+    def print_message_for_button(self):
+        message_width, message_height = font.size(self.__message)
+        rect_for_message = self.__x_start / 2 - message_width / 2, self.__y_start + self.__button_height / 2 - message_height / 2
+        text = font.render(self.__message, True, BLACK)
+        screen.blit(text, rect_for_message)
+
+
+
+
 class AutoShips:
     def __init__(self, offset):
         self.offset = offset
@@ -130,9 +172,15 @@ class AutoShips:
         return ships_coordinates_list
 
 computer = AutoShips(0)
-human = AutoShips(15)
+#human = AutoShips(15)
 computer_ships_working = copy.deepcopy(computer.ships)
-human_ships_working = copy.deepcopy(human.ships)
+#human_ships_working = copy.deepcopy(human.ships)
+
+auto_button_place = left_margin + 17 * block_size
+manual_button_place = left_margin + 20 * block_size
+how_to_create_ships_message = "Jak chcesz umieścić statki? Naciśnij przycisk"
+auto_button = Button(auto_button_place, "Auto", how_to_create_ships_message)
+manual_button = Button(manual_button_place, "Ręcznie", how_to_create_ships_message)
 
 def draw_ships(ships_coordinates_list):
     for elem in ships_coordinates_list:
@@ -244,24 +292,14 @@ def computer_hits_twice():
 def update_dotted_and_hit_sets(fired_block, computer_turn, diagonal_only=True):
     global dotted_set
     x, y = fired_block
-    a, b = 0, 11
-    if computer_turn:
-        a += 15
-        b += 15
-        hit_blocks_for_computer_not_to_shoot.add(fired_block)
-    hit_blocks.add((x, y))
+    a = 15 * computer_turn
+    b = 11 + 15 * computer_turn
+    hit_blocks_for_computer_not_to_shoot.add(fired_block)
+    hit_blocks.add(fired_block)
     for i in range(-1, 2):
         for j in range(-1, 2):
-            if diagonal_only:
-                if i != 0 and j != 0 and a < x + i < b and 0 < y + j < 11:
-                    dotted_set.add((x+i, y+j))
-                    if computer_turn:
-                        dotted_set_for_computer_not_to_shoot.add((fired_block[0] + i, y + j))
-            else:
-                if a < x + i < b and 0 < y + j < 11:
-                    dotted_set.add((x + i, y + j))
-                    if computer_turn:
-                        dotted_set_for_computer_not_to_shoot.add((fired_block[0] + i, y + j))
+            if(not diagonal_only or i !=0 and j != 0) and a < x + i < b and 0 < y + j < 11:
+                add_missed_block_to_dotted_set((x + i, y + j))
     dotted_set -= hit_blocks
 
 
@@ -281,20 +319,55 @@ def draw_hit_blocks(hit_blocks):
 def main():
     game_over = False
     computer_turn = False
+    ship_creation_not_decided = True
+    ships_not_created = True
+    rect_for_grids = (0, 0, size[0], upper_margin + 12 * block_size)
+    rect_for_messages_and_buttons = (0, upper_margin + 11 * block_size, size[0], 5 * block_size)
+
+    human_ships_to_draw = []
+
     screen.fill(WHITE)
     computer_grid = Grid("COMPUTER", 0)
     human_grid = Grid("HUMAN", 15*block_size)
     #draw_ships(computer.ships)
-    draw_ships(human.ships)
+    #draw_ships(human.ships)
     pygame.display.update()
 
+    while ship_creation_not_decided:
+        auto_button.draw_button()
+        manual_button.draw_button()
+        auto_button.change_color_on_hover()
+        manual_button.change_color_on_hover()
+        auto_button.print_message_for_button()
+
+        mouse = pygame.mouse.get_pos()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game_over = True
+                ship_creation_not_decided = False
+                ships_not_created = False
+            #if AUTO button is pressed - create human ships automaticaly
+            elif event.type == pygame.MOUSEBUTTONDOWN and auto_button.rect.collidepoint(mouse):
+                print("Clicked AUTO", event.pos)
+                human = AutoShips(15)
+                human_ships_to_draw = human.ships
+                human_ships_working = copy.deepcopy(human.ships)
+                ship_creation_not_decided = False
+                ships_not_created = False
+
+
+        pygame.display.update()
+        screen.fill(WHITE, rect_for_messages_and_buttons)
+
+
     while not game_over:
+        draw_ships(human_ships_to_draw)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
             elif not computer_turn and event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
-                if (left_margin <= x <= left_margin + 10 * block_size) and (upper_margin <= y <= upper_margin + 10 * block_size):
+                if (left_margin < x < left_margin + 10 * block_size) and (upper_margin < y < upper_margin + 10 * block_size):
                     fired_block = ((x - left_margin) // block_size + 1, (y - upper_margin) // block_size + 1)
                     computer_turn = not check_hit_or_miss(fired_block, computer_ships_working, False, computer.ships, computer.ships_set)
         if computer_turn:
