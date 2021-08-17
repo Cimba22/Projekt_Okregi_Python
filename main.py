@@ -22,8 +22,11 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Okręgi")
 
 font_size = int(block_size / 1.5)
+game_over_font_size = 3 * block_size
 
+game_over_font = pygame.font.SysFont('arial', game_over_font_size)
 font = pygame.font.SysFont('arial', font_size)
+
 
 computer_available_to_fire_set = {(a, b) for a in range(16, 25) for b in range(1, 11)}
 around_last_computer_hit_set = set()
@@ -178,19 +181,14 @@ def ship_is_valid(ship_set, blocks_for_manual_drawing):
 def check_ships_numbers(ship, num_ships_list):
     return (5 - len(ship)) > num_ships_list[len(ship) - 1]
 
-def update_used_blocks(ship, used_blocks_set):
+
+
+def update_used_blocks(ship, method):
     for block in ship:
         for i in range(-1, 2):
             for j in range(-1, 2):
-                used_blocks_set.add((block[0] + i, block[1] + j))
-    return used_blocks_set
+                method((block[0] + i, block[1] + j))
 
-def restore_used_blocks(delete_ship, used_blocks_set):
-    for block in delete_ship:
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                used_blocks_set.discard((block[0] + i, block[1] + j))
-    return used_blocks_set
 
 computer = AutoShips(0)
 #human = AutoShips(15)
@@ -365,6 +363,8 @@ def main():
                                       upper_margin + 11 * block_size,
                                       size[0] - (undo_button.rect_for_draw[0] + undo_button.rect_for_draw[2]), 4 * block_size)
 
+    message_rect_computer = (left_margin - 2 * block_size, upper_margin + 11 * block_size, 14 * block_size, 4 * block_size)
+    message_rect_human = (left_margin + 15 * block_size, upper_margin + 11 * block_size, 10 * block_size, 4 * block_size)
     human_ships_to_draw = []
     used_blocks_for_manual_drawing = set()
     num_ships_list = [0, 0, 0, 0]
@@ -424,9 +424,10 @@ def main():
 
             elif undo_button.rect.collidepoint(mouse) and event.type == pygame.MOUSEBUTTONDOWN:
                 if human_ships_to_draw:
+                    screen.fill(WHITE, message_rect_for_drawing_ships)
                     delete_ship = human_ships_to_draw.pop()
                     num_ships_list[len(delete_ship) - 1] -= 1
-                    used_blocks_for_manual_drawing = restore_used_blocks(delete_ship, used_blocks_for_manual_drawing)
+                    update_used_blocks(delete_ship, used_blocks_for_manual_drawing.discard)
 
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -466,7 +467,7 @@ def main():
                             num_ships_list[len(temp_ship) - 1] += 1
                             human_ships_to_draw.append(temp_ship)
                             human_ships_set |= temp_ship_set
-                            used_blocks_for_manual_drawing = update_used_blocks(temp_ship, used_blocks_for_manual_drawing)
+                            update_used_blocks(temp_ship, used_blocks_for_manual_drawing.add)
                         else:
                             show_message_rect_center(f"Dużo {len(temp_ship)}-mejscowych okręgów.", message_rect_for_drawing_ships)
                     else:
@@ -482,7 +483,10 @@ def main():
 
 
     while not game_over:
+        draw_ships(destroyed_ships_list)
         draw_ships(human_ships_to_draw)
+        if not (dotted_set | hit_blocks):
+            show_message_rect_center("Gra rozpoczęta! Chodź!", message_rect_computer)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
@@ -491,16 +495,28 @@ def main():
                 if (left_margin < x < left_margin + 10 * block_size) and (upper_margin < y < upper_margin + 10 * block_size):
                     fired_block = ((x - left_margin) // block_size + 1, (y - upper_margin) // block_size + 1)
                     computer_turn = not check_hit_or_miss(fired_block, computer_ships_working, False, computer.ships, computer.ships_set)
+                    draw_from_dotted_set(dotted_set)
+                    draw_hit_blocks(hit_blocks)
+                    screen.fill(WHITE, message_rect_computer)
+                    show_message_rect_center(f"Twój ostatni ruch: {LETTERS[fired_block[0]-1] + str(fired_block[1])}", message_rect_computer, color=BLACK)
+                else:
+                    show_message_rect_center("Strzał poza siatką!", message_rect_computer)
+
+
         if computer_turn:
             set_to_shoot_from = computer_available_to_fire_set
             if around_last_computer_hit_set:
                 set_to_shoot_from = around_last_computer_hit_set
             fired_block = computer_shoots(set_to_shoot_from)
-            computer_turn = check_hit_or_miss(fired_block, human_ships_working, True, human.ships, human.ships_set)
-
-        draw_from_dotted_set(dotted_set)
-        draw_hit_blocks(hit_blocks)
-        draw_ships(destroyed_ships_list)
+            computer_turn = check_hit_or_miss(fired_block, human_ships_working, True, human_ships_to_draw, human_ships_set)
+            draw_from_dotted_set(dotted_set)
+            draw_hit_blocks(hit_blocks)
+            screen.fill(WHITE, message_rect_human)
+            show_message_rect_center(f"Ostatni ruch komputera: {LETTERS[fired_block[0] - 16] + str(fired_block[1])}", message_rect_human, color=BLACK)
+        if not computer.ships_set:
+            show_message_rect_center("Wygrałeś!", (0, 0, size[0], size[1]), game_over_font)
+        if not human_ships_set:
+            show_message_rect_center("Przegrałeś!", (0, 0, size[0], size[1]), game_over_font)
         pygame.display.update()
 
 main()
