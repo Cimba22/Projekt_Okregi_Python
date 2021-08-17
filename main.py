@@ -23,7 +23,7 @@ pygame.display.set_caption("Okręgi")
 
 font_size = int(block_size / 1.5)
 
-font = pygame.font.SysFont('notosans', font_size)
+font = pygame.font.SysFont('arial', font_size)
 
 computer_available_to_fire_set = {(a, b) for a in range(16, 25) for b in range(1, 11)}
 around_last_computer_hit_set = set()
@@ -44,13 +44,12 @@ class Grid:
 
     def draw_grid(self):
         for i in range(11):
-
-            #Hor lines
-            pygame.draw.line(screen, BLACK, (left_margin+self.offset, upper_margin+i*block_size),
-                             (left_margin+10*block_size+self.offset, upper_margin+i*block_size), 1)
-            #Vert lines
-            pygame.draw.line(screen, BLACK, (left_margin+i*block_size+self.offset, upper_margin),
-                             (left_margin+i*block_size+self.offset, upper_margin+10*block_size), 1)
+            # Horizontal lines
+            pygame.draw.line(screen, BLACK, (left_margin + self.offset * block_size, upper_margin + i * block_size),
+                             (left_margin + (10 + self.offset) * block_size, upper_margin + i * block_size), 1)
+            # Vertical lines
+            pygame.draw.line(screen, BLACK, (left_margin + (i + self.offset) * block_size, upper_margin),
+                             (left_margin + (i + self.offset) * block_size, upper_margin + 10 * block_size), 1)
 
     def add_nums_letters_to_grid(self):
         for i in range(10):
@@ -61,17 +60,19 @@ class Grid:
             num_vert_height = num_vert.get_height()
             letters_hor_width = letters_hor.get_width()
 
-            #Vert num grid1
-            screen.blit(num_vert, (left_margin - (block_size//2+num_vert_width//2)+self.offset,
-                                   upper_margin + i*block_size + (block_size//2 - num_vert_height//2)))
-            #Hor letters grid1
-            screen.blit(letters_hor, (left_margin + i * block_size + (block_size//2 - letters_hor_width//2)+self.offset,
+            # Numbers (vertical)
+            screen.blit(num_vert, (left_margin - (block_size // 2 + num_vert_width // 2) + self.offset * block_size,
+                                  upper_margin + i * block_size + (block_size // 2 - num_vert_height // 2)))
+            # Letters (horizontal)
+            screen.blit(letters_hor, (left_margin + i * block_size + (block_size // 2 -
+                                                                      letters_hor_width // 2) + self.offset * block_size,
                                       upper_margin + 10 * block_size))
 
     def sign_grids(self):
         player = font.render(self.title, True, BLACK)
         sign_width = player.get_width()
-        screen.blit(player, (left_margin + 5 * block_size - sign_width//2+self.offset, upper_margin - block_size//2 - font_size))
+        screen.blit(player, (left_margin + 5 * block_size - sign_width // 2 +
+                             self.offset * block_size, upper_margin - block_size // 2 - font_size))
 
 class Button:
     def __init__(self, x_offset, button_title, message_to_show):
@@ -182,6 +183,13 @@ def update_used_blocks(ship, used_blocks_set):
         for i in range(-1, 2):
             for j in range(-1, 2):
                 used_blocks_set.add((block[0] + i, block[1] + j))
+    return used_blocks_set
+
+def restore_used_blocks(delete_ship, used_blocks_set):
+    for block in delete_ship:
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                used_blocks_set.discard((block[0] + i, block[1] + j))
     return used_blocks_set
 
 computer = AutoShips(0)
@@ -314,7 +322,7 @@ def update_dotted_and_hit_sets(fired_block, computer_turn, diagonal_only=True):
     hit_blocks.add(fired_block)
     for i in range(-1, 2):
         for j in range(-1, 2):
-            if(not diagonal_only or i !=0 and j != 0) and a < x + i < b and 0 < y + j < 11:
+            if(not diagonal_only or i != 0 and j != 0) and a < x + i < b and 0 < y + j < 11:
                 add_missed_block_to_dotted_set((x + i, y + j))
     dotted_set -= hit_blocks
 
@@ -365,7 +373,7 @@ def main():
 
     screen.fill(WHITE)
     computer_grid = Grid("COMPUTER", 0)
-    human_grid = Grid("HUMAN", 15 * block_size)
+    human_grid = Grid("HUMAN", 15)
     #draw_ships(computer.ships)
     #draw_ships(human.ships)
     pygame.display.update()
@@ -402,7 +410,7 @@ def main():
     while ships_not_created:
         screen.fill(WHITE, rect_for_grids)
         computer_grid = Grid("Computer", 0)
-        human_grid = Grid("Human", 15 * block_size)
+        human_grid = Grid("Human", 15)
         undo_button.draw_button()
         undo_button.print_message_for_button()
         undo_button.change_color_on_hover()
@@ -413,6 +421,14 @@ def main():
             if event.type == pygame.QUIT:
                 ships_not_created = False
                 game_over = True
+
+            elif undo_button.rect.collidepoint(mouse) and event.type == pygame.MOUSEBUTTONDOWN:
+                if human_ships_to_draw:
+                    delete_ship = human_ships_to_draw.pop()
+                    num_ships_list[len(delete_ship) - 1] -= 1
+                    used_blocks_for_manual_drawing = restore_used_blocks(delete_ship, used_blocks_for_manual_drawing)
+
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 drawing = True
                 x_start, y_start = event.pos
