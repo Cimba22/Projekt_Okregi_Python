@@ -205,9 +205,7 @@ undo_message = "Żeby zmienić ostatni okręg naciśnij przycisk"
 undo_button_place = left_margin + 12 * block_size
 undo_button = Button(undo_button_place, "Skasować", undo_message)
 
-reset_button_message = "Nowa gra."
-reset_button_place = left_margin + 26 * block_size
-reset_button = Button(reset_button_place, "Reset", reset_button_message)
+
 
 
 def draw_ships(ships_coordinates_list):
@@ -359,7 +357,6 @@ def main():
     ship_creation_not_decided = True
     ships_not_created = True
     drawing = False
-    game_not_decided_to_reset = True
     start = (0, 0)
     ships_size = (0, 0)
 
