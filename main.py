@@ -4,6 +4,7 @@ import copy
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
 GREEN_BLUE = (0, 153, 153)
 LIGHT_GRAY = (192, 192, 192)
 RED = (255, 0, 0)
@@ -204,6 +205,11 @@ undo_message = "Żeby zmienić ostatni okręg naciśnij przycisk"
 undo_button_place = left_margin + 12 * block_size
 undo_button = Button(undo_button_place, "Skasować", undo_message)
 
+reset_button_message = "Nowa gra."
+reset_button_place = left_margin + 26 * block_size
+reset_button = Button(reset_button_place, "Reset", reset_button_message)
+
+
 def draw_ships(ships_coordinates_list):
     for elem in ships_coordinates_list:
         ship = sorted(elem)
@@ -327,14 +333,14 @@ def update_dotted_and_hit_sets(fired_block, computer_turn, diagonal_only=True):
 
 def draw_from_dotted_set(dotted_set):
     for elem in dotted_set:
-        pygame.draw.circle(screen, BLACK, (block_size * (elem[0] - 0.5) + left_margin, block_size * (elem[1] - 0.5) + upper_margin), block_size//6)
+        pygame.draw.circle(screen, BLUE, (block_size * (elem[0] - 0.5) + left_margin, block_size * (elem[1] - 0.5) + upper_margin), block_size//6)
 
 def draw_hit_blocks(hit_blocks):
     for block in hit_blocks:
         x1 = block_size * (block[0] - 1) + left_margin
         y1 = block_size * (block[1] - 1) + upper_margin
-        pygame.draw.line(screen, BLACK, (x1, y1), (x1+block_size, y1+block_size), block_size//6)
-        pygame.draw.line(screen, BLACK, (x1, y1 + block_size), (x1+block_size, y1), block_size//6)
+        pygame.draw.line(screen, RED, (x1, y1), (x1+block_size, y1+block_size), block_size//6)
+        pygame.draw.line(screen, RED, (x1, y1 + block_size), (x1+block_size, y1), block_size//6)
 
 def show_message_rect_center(text, rect, which_font=font, color=RED):
     text_width, text_height = which_font.size(text)
@@ -353,6 +359,7 @@ def main():
     ship_creation_not_decided = True
     ships_not_created = True
     drawing = False
+    game_not_decided_to_reset = True
     start = (0, 0)
     ships_size = (0, 0)
 
@@ -374,11 +381,12 @@ def main():
     screen.fill(WHITE)
     computer_grid = Grid("COMPUTER", 0)
     human_grid = Grid("HUMAN", 15)
-    #draw_ships(computer.ships)
-    #draw_ships(human.ships)
     pygame.display.update()
 
+
+
     while ship_creation_not_decided:
+
         auto_button.draw_button()
         manual_button.draw_button()
         auto_button.change_color_on_hover()
@@ -386,6 +394,7 @@ def main():
         auto_button.print_message_for_button()
 
         mouse = pygame.mouse.get_pos()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
@@ -405,6 +414,7 @@ def main():
 
         pygame.display.update()
         screen.fill(WHITE, rect_for_messages_and_buttons)
+
 
 
     while ships_not_created:
@@ -479,6 +489,7 @@ def main():
         pygame.draw.rect(screen, BLACK, (start, ships_size), 3)
         draw_ships(human_ships_to_draw)
         pygame.display.update()
+
 
 
 
