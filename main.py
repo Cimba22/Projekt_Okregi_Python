@@ -20,7 +20,7 @@ LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 pygame.init()
 
 screen = pygame.display.set_mode(size)
-pygame.display.set_caption("Okręgi")
+pygame.display.set_caption("Okręty")
 
 font_size = int(block_size / 1.5)
 game_over_font_size = 3 * block_size
@@ -416,8 +416,8 @@ def main():
 
     while ships_not_created:
         screen.fill(WHITE, rect_for_grids)
-        computer_grid = Grid("Computer", 0)
-        human_grid = Grid("Human", 15)
+        computer_grid = Grid("Komputer", 0)
+        human_grid = Grid("Człowiek", 15)
         undo_button.draw_button()
         undo_button.print_message_for_button()
         undo_button.change_color_on_hover()
@@ -464,7 +464,7 @@ def main():
                         for block in range(start_block[0], end_block[0] + 1):
                             temp_ship.append((block, start_block[1]))
                     else:
-                        show_message_rect_center("Okręg jest za duży!", message_rect_for_drawing_ships)
+                        show_message_rect_center("Okręt jest za duży!", message_rect_for_drawing_ships)
                 else:
                     show_message_rect_center("Statek poza siatką!", message_rect_for_drawing_ships)
                 if temp_ship:
@@ -478,7 +478,7 @@ def main():
                         else:
                             show_message_rect_center(f"Dużo {len(temp_ship)}-mejscowych okręgów.", message_rect_for_drawing_ships)
                     else:
-                        show_message_rect_center("Okręgi dotykają się!", message_rect_for_drawing_ships)
+                        show_message_rect_center("Okręty dotykają się!", message_rect_for_drawing_ships)
             if len(human_ships_to_draw) == 10:
                 ships_not_created = False
                 human_ships_working = copy.deepcopy(human_ships_to_draw)
