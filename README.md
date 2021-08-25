@@ -31,7 +31,7 @@ W klasie są atrybuty:
 2. `add_nums_letters_to_grid():` Rysuje cyfry od 1 do 10 wzdłuż pionu i dodaje litery poniżej linii poziomych dla obu siatek;
 3. `sign_grid():` Umieszcza imiona graczy (tytuły) na środku nad siatkami
 
-####Class Button
+#### Class Button
 Klasa `Button` sługuje do tworzenia przycisków i pisze dla nich komunikat wyjaśniający.
 Klasa ma takie atrybuty:
 * `__title (str):` Nazwa przycisku (tytuł);
