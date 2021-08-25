@@ -119,61 +119,70 @@ class Button:
 class AutoShips:
     def __init__(self, offset):
         self.offset = offset
-        self.available_blocks = {(x, y) for x in range(1 + self.offset, 11 + self.offset) for y in range(1, 11)}
+        self.available_blocks = {(x, y) for x in range(
+            1 + self.offset, 11 + self.offset) for y in range(1, 11)}
         self.ships_set = set()
-        self.ships = self.populate_grid()
+        self.ships = self.__populate_grid()
+        self.orientation = None
+        self.direction = None
 
-    def create_start_block(self, available_blocks):
-        x_or_y = random.randint(0, 1)
-        str_rev = random.choice((-1, 1))
+
+    def __create_start_block(self, available_blocks):
+        self.orientation = random.randint(0, 1)
+        # -1 is left or down, 1 is right or up
+        self.direction = random.choice((-1, 1))
         x, y = random.choice(tuple(available_blocks))
-        return x, y, x_or_y, str_rev
+        return x, y, self.orientation, self.direction
 
-    def create_ship(self, number_of_blocks, available_blocks):
+    def __create_ship(self, number_of_blocks, available_blocks):
         ship_coordinates = []
-        x, y, x_or_y, str_rev = self.create_start_block(available_blocks)
+        x, y, self.orientation, self.direction = self.__create_start_block(
+            available_blocks)
         for _ in range(number_of_blocks):
             ship_coordinates.append((x, y))
-            if not x_or_y:
-                str_rev, x = self.get_new_block_for_ship(
-                    x, str_rev, x_or_y, ship_coordinates)
+            if not self.orientation:
+                self.direction, x = self.__get_new_block_for_ship(
+                    x, self.direction, self.orientation, ship_coordinates)
             else:
-                str_rev, y = self.get_new_block_for_ship(
-                    y, str_rev, x_or_y, ship_coordinates)
-        if self.if_ship_valid(ship_coordinates):
+                self.direction, y = self.__get_new_block_for_ship(
+                    y, self.direction, self.orientation, ship_coordinates)
+        if self.__is_ship_valid(ship_coordinates):
             return ship_coordinates
-        return self.create_ship(number_of_blocks, available_blocks)
+        return self.__create_ship(number_of_blocks, available_blocks)
 
-    def get_new_block_for_ship(self, coor, str_rev, x_or_y, ship_coordinates):
-        if(coor <= 1-self.offset*(x_or_y - 1) and str_rev == -1) or (coor >= 10-self.offset*(x_or_y - 1) and str_rev == 1):
-            str_rev *= -1
-            return str_rev, ship_coordinates[0][x_or_y] + str_rev
+    def __get_new_block_for_ship(self, coor, direction, orientation, ship_coordinates):
+        self.direction = direction
+        self.orientation = orientation
+        if (coor <= 1 - self.offset * (self.orientation - 1) and self.direction == -1) or (
+                coor >= 10 - self.offset * (self.orientation - 1) and self.direction == 1):
+            self.direction *= -1
+            return self.direction, ship_coordinates[0][self.orientation] + self.direction
         else:
-            return str_rev, ship_coordinates[-1][x_or_y] + str_rev
+            return self.direction, ship_coordinates[-1][self.orientation] + self.direction
 
-    def if_ship_valid(self, new_ship):
+    def __is_ship_valid(self, new_ship):
         ship = set(new_ship)
         return ship.issubset(self.available_blocks)
 
-    def add_new_ship_to_set(self, new_ship):
+    def __add_new_ship_to_set(self, new_ship):
         self.ships_set.update(new_ship)
 
-    def update_available_blocks_for_creating_ships(self, new_ship):
+    def __update_available_blocks_for_creating_ships(self, new_ship):
         for elem in new_ship:
             for k in range(-1, 2):
                 for m in range(-1, 2):
-                    if 0+self.offset < (elem[0]+k) < 11+self.offset and 0 < (elem[1]+m) < 11:
-                        self.available_blocks.discard((elem[0]+k, elem[1]+m))
+                    if self.offset < (elem[0] + k) < 11 + self.offset and 0 < (elem[1] + m) < 11:
+                        self.available_blocks.discard((elem[0] + k, elem[1] + m))
 
-    def populate_grid(self):
+    def __populate_grid(self):
         ships_coordinates_list = []
         for number_of_blocks in range(4, 0, -1):
-            for _ in range(5-number_of_blocks):
-                new_ship = self.create_ship(
+            for _ in range(5 - number_of_blocks):
+                new_ship = self.__create_ship(
                     number_of_blocks, self.available_blocks)
                 ships_coordinates_list.append(new_ship)
-                self.add_new_ship_to_set(new_ship)
-                self.update_available_blocks_for_creating_ships(new_ship)
+                self.__add_new_ship_to_set(new_ship)
+                self.__update_available_blocks_for_creating_ships(new_ship)
         return ships_coordinates_list
 
 def ship_is_valid(ship_set, blocks_for_manual_drawing):
@@ -192,9 +201,7 @@ def update_used_blocks(ship, method):
 
 
 computer = AutoShips(0)
-#human = AutoShips(15)
 computer_ships_working = copy.deepcopy(computer.ships)
-#human_ships_working = copy.deepcopy(human.ships)
 
 auto_button_place = left_margin + 17 * block_size
 manual_button_place = left_margin + 20 * block_size
@@ -213,46 +220,53 @@ def draw_ships(ships_coordinates_list):
         ship = sorted(elem)
         x_start = ship[0][0]
         y_start = ship[0][1]
-        # hor and 1block ships
+        # Horizontal and 1block ships
         ship_width = block_size * len(ship)
         ship_height = block_size
-        #vert
+        # Vertical ships
         if len(ship) > 1 and ship[0][0] == ship[1][0]:
             ship_width, ship_height = ship_height, ship_width
         x = block_size * (x_start - 1) + left_margin
         y = block_size * (y_start - 1) + upper_margin
         pygame.draw.rect(
-            screen, BLACK, ((x, y), (ship_width, ship_height)), width=block_size//10)
+            screen, BLACK, ((x, y), (ship_width, ship_height)), width=block_size // 10)
 
 
 def computer_shoots(set_to_shoot_from):
     pygame.time.delay(500)
-    computer_fired_blocked = random.choice(tuple(set_to_shoot_from))
-    computer_available_to_fire_set.discard(computer_fired_blocked)
-    return computer_fired_blocked
+    computer_fired_block = random.choice(tuple(set_to_shoot_from))
+    computer_available_to_fire_set.discard(computer_fired_block)
+    return computer_fired_block
 
 
-def check_hit_or_miss(fired_block, opponents_ships_list, computer_turn, opponents_ships_list_original_copy, opponents_ships_set):
+def check_hit_or_miss(fired_block, opponents_ships_list, computer_turn, opponents_ships_list_original_copy,
+                      opponents_ships_set):
     for elem in opponents_ships_list:
         diagonal_only = True
         if fired_block in elem:
+            # This is to put dots before and after a destroyed ship
+            # and to draw computer's destroyed ships (which are hidden until destroyed)
             ind = opponents_ships_list.index(elem)
             if len(elem) == 1:
                 diagonal_only = False
-            update_dotted_and_hit_sets(fired_block, computer_turn, diagonal_only)
+            update_dotted_and_hit_sets(
+                fired_block, computer_turn, diagonal_only)
             elem.remove(fired_block)
+            # This is to check who loses - if ships_set is empty
             opponents_ships_set.discard(fired_block)
             if computer_turn:
                 last_hits_list.append(fired_block)
-                update_around_last_computer_hit(fired_block)
+                update_around_last_computer_hit(fired_block, True)
+            # If the ship is destroyed
             if not elem:
-                update_destroyed_ships(ind, computer_turn, opponents_ships_list_original_copy)
+                update_destroyed_ships(
+                    ind, computer_turn, opponents_ships_list_original_copy)
                 if computer_turn:
                     last_hits_list.clear()
                     around_last_computer_hit_set.clear()
                 else:
+                    # Add computer's destroyed ship to the list to draw it (computer ships are hidden)
                     destroyed_ships_list.append(computer.ships[ind])
-
             return True
     add_missed_block_to_dotted_set(fired_block)
     if computer_turn:
@@ -269,45 +283,44 @@ def update_destroyed_ships(ind, computer_turn, opponents_ships_list_original_cop
         update_dotted_and_hit_sets(ship[i], computer_turn, False)
 
 
-def update_around_last_computer_hit(fired_block, computer_hits=True):
+def update_around_last_computer_hit(fired_block, computer_hits):
     global around_last_computer_hit_set, computer_available_to_fire_set
     if computer_hits and fired_block in around_last_computer_hit_set:
         around_last_computer_hit_set = computer_hits_twice()
-
     elif computer_hits and fired_block not in around_last_computer_hit_set:
         computer_first_hit(fired_block)
     elif not computer_hits:
         around_last_computer_hit_set.discard(fired_block)
+
     around_last_computer_hit_set -= dotted_set_for_computer_not_to_shoot
     around_last_computer_hit_set -= hit_blocks_for_computer_not_to_shoot
     computer_available_to_fire_set -= around_last_computer_hit_set
     computer_available_to_fire_set -= dotted_set_for_computer_not_to_shoot
 
 def computer_first_hit(fired_block):
-    xhit, yhit = fired_block
-    if 16 < xhit:
-        around_last_computer_hit_set.add((xhit - 1, yhit))
-    if xhit < 25:
-        around_last_computer_hit_set.add((xhit + 1, yhit))
-    if 1 < yhit:
-        around_last_computer_hit_set.add((xhit, yhit - 1))
-    if yhit < 10:
-        around_last_computer_hit_set.add((xhit, yhit + 1))
+    x_hit, y_hit = fired_block
+    if x_hit > 16:
+        around_last_computer_hit_set.add((x_hit - 1, y_hit))
+    if x_hit < 25:
+        around_last_computer_hit_set.add((x_hit + 1, y_hit))
+    if y_hit > 1:
+        around_last_computer_hit_set.add((x_hit, y_hit - 1))
+    if y_hit < 10:
+        around_last_computer_hit_set.add((x_hit, y_hit + 1))
 
 def computer_hits_twice():
     last_hits_list.sort()
     new_around_last_hit_set = set()
     for i in range(len(last_hits_list) - 1):
         x1 = last_hits_list[i][0]
-        x2 = last_hits_list[i+1][0]
+        x2 = last_hits_list[i + 1][0]
         y1 = last_hits_list[i][1]
-        y2 = last_hits_list[i+1][1]
+        y2 = last_hits_list[i + 1][1]
         if x1 == x2:
             if y1 > 1:
                 new_around_last_hit_set.add((x1, y1 - 1))
             if y2 < 10:
                 new_around_last_hit_set.add((x1, y2 + 1))
-
         elif y1 == y2:
             if x1 > 16:
                 new_around_last_hit_set.add((x1 - 1, y1))
@@ -324,21 +337,25 @@ def update_dotted_and_hit_sets(fired_block, computer_turn, diagonal_only=True):
     hit_blocks.add(fired_block)
     for i in range(-1, 2):
         for j in range(-1, 2):
-            if(not diagonal_only or i != 0 and j != 0) and a < x + i < b and 0 < y + j < 11:
+            if (not diagonal_only or i != 0 and j != 0) and a < x + i < b and 0 < y + j < 11:
                 add_missed_block_to_dotted_set((x + i, y + j))
     dotted_set -= hit_blocks
 
 
-def draw_from_dotted_set(dotted_set):
-    for elem in dotted_set:
-        pygame.draw.circle(screen, BLUE, (block_size * (elem[0] - 0.5) + left_margin, block_size * (elem[1] - 0.5) + upper_margin), block_size//6)
+def draw_from_dotted_set(dotted_set_to_draw_from):
+    for elem in dotted_set_to_draw_from:
+        pygame.draw.circle(screen, BLUE, (block_size * (
+                elem[0] - 0.5) + left_margin, block_size * (elem[1] - 0.5) + upper_margin), block_size // 6)
 
-def draw_hit_blocks(hit_blocks):
-    for block in hit_blocks:
+def draw_hit_blocks(hit_blocks_to_draw_from):
+    for block in hit_blocks_to_draw_from:
         x1 = block_size * (block[0] - 1) + left_margin
         y1 = block_size * (block[1] - 1) + upper_margin
-        pygame.draw.line(screen, RED, (x1, y1), (x1+block_size, y1+block_size), block_size//6)
-        pygame.draw.line(screen, RED, (x1, y1 + block_size), (x1+block_size, y1), block_size//6)
+        pygame.draw.line(screen, RED, (x1, y1),
+                         (x1 + block_size, y1 + block_size), block_size // 6)
+        pygame.draw.line(screen, RED, (x1, y1 + block_size),
+                         (x1 + block_size, y1), block_size // 6)
+
 
 def show_message_rect_center(text, rect, which_font=font, color=RED):
     text_width, text_height = which_font.size(text)
@@ -360,15 +377,17 @@ def main():
     start = (0, 0)
     ships_size = (0, 0)
 
-
     rect_for_grids = (0, 0, size[0], upper_margin + 12 * block_size)
-    rect_for_messages_and_buttons = (0, upper_margin + 11 * block_size, size[0], 5 * block_size)
-    message_rect_for_drawing_ships = (undo_button.rect_for_draw[0] + undo_button.rect_for_draw[2],
-                                      upper_margin + 11 * block_size,
-                                      size[0] - (undo_button.rect_for_draw[0] + undo_button.rect_for_draw[2]), 4 * block_size)
+    rect_for_messages_and_buttons = (
+        0, upper_margin + 11 * block_size, size[0], 5 * block_size)
+    message_rect_for_drawing_ships = (
+    undo_button.rect_for_draw[0] + undo_button.rect_for_draw[2], upper_margin + 11 * block_size, size[0] - (
+            undo_button.rect_for_draw[0] + undo_button.rect_for_draw[2]), 4 * block_size)
+    message_rect_computer = (left_margin - 2 * block_size, upper_margin +
+                             11 * block_size, 14 * block_size, 4 * block_size)
+    message_rect_human = (left_margin + 15 * block_size, upper_margin +
+                          11 * block_size, 10 * block_size, 4 * block_size)
 
-    message_rect_computer = (left_margin - 2 * block_size, upper_margin + 11 * block_size, 14 * block_size, 4 * block_size)
-    message_rect_human = (left_margin + 15 * block_size, upper_margin + 11 * block_size, 10 * block_size, 4 * block_size)
     human_ships_to_draw = []
     used_blocks_for_manual_drawing = set()
     num_ships_list = [0, 0, 0, 0]
