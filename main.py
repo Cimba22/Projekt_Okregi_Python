@@ -395,8 +395,8 @@ def main():
 
 
     screen.fill(WHITE)
-    computer_grid = Grid("COMPUTER", 0)
-    human_grid = Grid("HUMAN", 15)
+    computer_grid = Grid("Komputer", 0)
+    human_grid = Grid("Człowiek", 15)
     pygame.display.update()
 
 
@@ -485,7 +485,7 @@ def main():
                     else:
                         show_message_rect_center("Okręt jest za duży!", message_rect_for_drawing_ships)
                 else:
-                    show_message_rect_center("Statek poza siatką!", message_rect_for_drawing_ships)
+                    show_message_rect_center("Okręt za siatką!", message_rect_for_drawing_ships)
                 if temp_ship:
                     temp_ship_set = set(temp_ship)
                     if ship_is_valid(temp_ship_set, used_blocks_for_manual_drawing):
@@ -495,7 +495,7 @@ def main():
                             human_ships_set |= temp_ship_set
                             update_used_blocks(temp_ship, used_blocks_for_manual_drawing.add)
                         else:
-                            show_message_rect_center(f"Dużo {len(temp_ship)}-mejscowych okręgów.", message_rect_for_drawing_ships)
+                            show_message_rect_center(f"Za dużo {len(temp_ship)}-masztowych okręgów.", message_rect_for_drawing_ships)
                     else:
                         show_message_rect_center("Okręty dotykają się!", message_rect_for_drawing_ships)
             if len(human_ships_to_draw) == 10:
