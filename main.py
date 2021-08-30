@@ -21,7 +21,7 @@ pygame.init()
 
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Okręty")
-
+# Ten współczynnik służy wyłącznie do skalowania czcionki zgodnie z rozmiarem bloku
 font_size = int(block_size / 1.5)
 game_over_font_size = 3 * block_size
 
@@ -244,20 +244,20 @@ def check_hit_or_miss(fired_block, opponents_ships_list, computer_turn, opponent
     for elem in opponents_ships_list:
         diagonal_only = True
         if fired_block in elem:
-            # This is to put dots before and after a destroyed ship
-            # and to draw computer's destroyed ships (which are hidden until destroyed)
+            # Ma to na celu umieszczenie kropek przed i za zniszczonym statkiem
+            # i narysować zniszczone statki komputera (które są ukryte do momentu zniszczenia)
             ind = opponents_ships_list.index(elem)
             if len(elem) == 1:
                 diagonal_only = False
             update_dotted_and_hit_sets(
                 fired_block, computer_turn, diagonal_only)
             elem.remove(fired_block)
-            # This is to check who loses - if ships_set is empty
+            # Ma to na celu sprawdzenie, kto przegrywa - jeśli ship_set jest pusty
             opponents_ships_set.discard(fired_block)
             if computer_turn:
                 last_hits_list.append(fired_block)
                 update_around_last_computer_hit(fired_block, True)
-            # If the ship is destroyed
+            # Jeśli statek zostanie zniszczony
             if not elem:
                 update_destroyed_ships(
                     ind, computer_turn, opponents_ships_list_original_copy)
@@ -265,7 +265,7 @@ def check_hit_or_miss(fired_block, opponents_ships_list, computer_turn, opponent
                     last_hits_list.clear()
                     around_last_computer_hit_set.clear()
                 else:
-                    # Add computer's destroyed ship to the list to draw it (computer ships are hidden)
+                    # Dodaj zniszczony statek komputera do listy, aby go narysować (statki komputerowe są ukryte)
                     destroyed_ships_list.append(computer.ships[ind])
             return True
     add_missed_block_to_dotted_set(fired_block)
@@ -416,7 +416,7 @@ def main():
                 game_over = True
                 ship_creation_not_decided = False
                 ships_not_created = False
-            #if AUTO button is pressed - create human ships automaticaly
+            #jeśli wciśnięty jest przycisk AUTO - automatycznie twórz ludzkie statki
             elif event.type == pygame.MOUSEBUTTONDOWN and auto_button.rect.collidepoint(mouse):
                 print("Clicked AUTO", event.pos)
                 human = AutoShips(15)
